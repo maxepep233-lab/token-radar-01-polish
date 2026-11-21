@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Radar — pre-token protocols, ranked by implied value</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="pulse" aria-hidden="true"></span><h1>TOKEN RADAR</h1><span class="version">radar-2</span></div>
+  <p class="tag">Every protocol in the snapshot that records no token, ranked by the value a token would imply — calibrated on the protocols whose tokens already trade.</p>
+  <div class="stats" id="stats"></div>
+</header>
+<nav class="tabs" aria-label="Views">
+  <button type="button" data-tab="board" class="active">Pre-token board</button>
+  <button type="button" data-tab="live">Live tokens</button>
+  <button type="button" data-tab="method">Method</button>
+</nav>
+<main>
+  <section id="view-board" aria-label="Pre-token board">
+    <div id="how-ranks" class="howranks" role="status"></div>
+    <div class="filters">
+      <input id="q" type="search" placeholder="Search name or slug" aria-label="Search protocols">
+      <select id="cat" aria-label="Filter by category"></select>
+      <select id="chain" aria-label="Filter by chain"></select>
+      <span id="count" class="count" role="status"></span>
+    </div>
+    <div class="tablewrap">
+      <table id="board">
+        <thead><tr>
+          <th data-sort="rank" class="num">#</th>
+          <th data-sort="name">Protocol</th>
+          <th data-sort="category">Category</th>
+          <th>Chains</th>
+          <th data-sort="tvl" class="num">TVL</th>
+          <th data-sort="change" class="num">7d</th>
+          <th data-sort="age" class="num">Age</th>
+          <th data-sort="implied" class="num">Implied value</th>
+          <th data-sort="odds" class="num">Token odds</th>
+        </tr></thead>
+        <tbody id="board-body"></tbody>
+      </table>
+    </div>
+    <p class="hint">Click a row for its full model breakdown and farm plan. Implied value is a model estimate from the snapshot, not a market price — these protocols record no token.</p>
+  </section>
+  <section id="view-detail" aria-label="Protocol detail" hidden>
+    <p><button type="button" id="back" class="linklike">&larr; Back to the board</button></p>
+    <div id="detail"></div>
+  </section>
+  <section id="view-live" aria-label="Live tokens" hidden>
+    <p class="hint">Protocols whose token already trades, by market cap. They are the peers the model is calibrated on — and the reason the board keeps pre-token and live-token protocols apart.</p>
+    <div class="tablewrap">
+      <table id="livetable">
+        <thead><tr>
+          <th class="num">#</th><th>Protocol</th><th>Category</th><th>Chains</th>
+          <th class="num">TVL</th><th class="num">Market cap</th><th class="num">7d</th><th class="num">Mcap / TVL</th>
+        </tr></thead>
+        <tbody id="live-body"></tbody>
+      </table>
+    </div>
+  </section>
+  <section id="view-method" aria-label="Method" hidden>
+    <h2>How the radar scores a protocol</h2>
+    <p class="formula">implied = round( TVL &times; multiple(category) &times; growth &times; maturity &times; odds )</p>
+    <ul class="terms">
+      <li><b>multiple(category)</b> — the median market-cap / TVL of the peers in that category, shrunk toward the global median with a prior weight of 8 protocols, used only when the category has at least 3 peers (fewer fall back to the global median) and capped at twice the global median. Peer ratios are winsorized at their 90th percentile before any median is taken.</li>
+      <li><b>growth</b> — 1 + clamp(change_7d, &minus;50, +100)% &times; 0.25. A week of growth moves the value by at most a quarter of its size.</li>
+      <li><b>maturity</b> — 0.8 + 0.2 &times; min(age, 1095) / 1095. Older protocols count a little more; a protocol with no listing date is scored at 365 days.</li>
+      <li><b>odds</b> — 0.5 + 0.5 &times; the blended token-record rate (half by age band, half by category): how often comparable protocols record a token at all.</li>
+    </ul>
+    <div id="calibration"></div>
+    <div id="holdout"></div>
+    <div id="chart"></div>
+    <h3>Coverage</h3>
+    <p id="coverage"></p>
+    <h3>What calibration buys — and what it does not</h3>
+    <p>TVL alone ranks a protocol by how much money sits in it. The radar asks what the market pays for that money: it calibrates the multiple from the snapshot's own traded peers, so a dollar of TVL in Lending is worth a different multiple than a dollar in Dexs or in Risk Curators, and it adds how long the protocol has run with no token and how often its peers have tokens at all. On a 64/64 hold-out of the traded peers, raw TVL predicts market caps with a 465% median error; the calibrated model cuts that to 92% — the ranking differences among calibrated variants are inside noise, so every adjustment term is kept small and bounded, and the numbers above are the measured ones, not a claim. What calibration does not do is beat TVL on rank: the full model scores 0.438 against TVL-only's 0.458, and no tested variant beats TVL on rank either. The model is kept for its calibrated absolute scale, its category separation, its token odds and the live/pre-token split — not for a ranking edge it does not have.</p>
+    <h3>What the radar does not do</h3>
+    <p>It never invents a token, a launch date or an airdrop: the snapshot carries none of those, so the farm plans are actions to take on a protocol, not promises of a reward. Nothing here is financial advice.</p>
+    <h3>Stablecoins and off-record tokens</h3>
+    <p id="stablecoin-note"></p>
+    <p id="provenance" class="muted"></p>
+  </section>
+</main>
+<footer>
+  <p>Token Radar — a dashboard built from one frozen snapshot. The judge reads this page and its source; the board is scored by lib/model.ts at build time, and app.js recomputes the same model live — every number on this page comes from the snapshot, nothing is fetched at view time.</p>
+</footer>
+<script src="../data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
